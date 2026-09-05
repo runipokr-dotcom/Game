@@ -3,59 +3,207 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Territory Game v0.2.4</title>
+<title>Territory Game v0.3</title>
 <style>
-:root{--bg:#111318;--panel:#1a1e26;--text:#f3f5f7;--muted:#9aa4b2;--player:#4ea1ff;--enemy:#ff5d73;--neutral:#707a89;--line:#2a3140;--sel:#ffd65c}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;overflow:hidden}#app{height:100%;display:flex;flex-direction:column}header{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--panel)}.sub{font-size:12px;color:var(--muted)}button{border:0;border-radius:10px;padding:8px 11px;font-weight:700;background:#2a3140;color:#fff}#game{position:relative;flex:1;touch-action:none;background:#11151c}svg{width:100%;height:100%;display:block}.edge{stroke:var(--line);stroke-width:3}.edge.hot{stroke:var(--sel);stroke-width:5}.node .hit{fill:transparent}.node .core{stroke:#fff;stroke-width:2}.node.player .core{fill:var(--player)}.node.enemy .core{fill:var(--enemy)}.node.neutral .core{fill:var(--neutral)}.node.selected .core{stroke:var(--sel);stroke-width:7}.node.target .core{stroke:#fff3a6;stroke-width:7;stroke-dasharray:8 5}.node text{fill:#fff;font-size:18px;font-weight:800;text-anchor:middle;dominant-baseline:middle;pointer-events:none}.unit{pointer-events:none}.unit circle{stroke:#fff}.unit text{fill:#fff;font-size:12px;font-weight:800;text-anchor:middle;dominant-baseline:middle}#dragLine{display:none;stroke:var(--sel);stroke-width:6;stroke-linecap:round;pointer-events:none}#toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:#000c;padding:8px 12px;border-radius:999px;font-size:12px;opacity:0;white-space:nowrap}#toast.show{opacity:1}#overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#07090cbb}#card{background:var(--panel);padding:22px;border-radius:18px;text-align:center}footer{padding:7px;text-align:center;background:var(--panel);color:var(--muted);font-size:11px}
+:root{
+  --bg:#101318;--panel:#171c24;--text:#f4f6f8;--muted:#9ba6b4;
+  --blue:#4ea1ff;--red:#ff5d73;--yellow:#f4c84a;--neutral:#697382;--select:#fff0a6;
+}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+#app{height:100%;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;background:var(--panel);z-index:2}
+.title{font-weight:800;font-size:15px}.sub{font-size:11px;color:var(--muted);margin-top:2px}.hud{font-size:11px;color:var(--muted);white-space:nowrap}
+button{border:0;border-radius:10px;padding:8px 11px;background:#29313f;color:#fff;font-weight:800}
+#game{position:relative;flex:1;min-height:0;touch-action:none;background:#0d1117}
+svg{width:100%;height:100%;display:block;touch-action:none}
+.territory{stroke:#151a22;stroke-width:4;vector-effect:non-scaling-stroke;transition:filter .08s,opacity .08s}
+.territory.neutral{fill:var(--neutral);opacity:.53}.territory.player{fill:var(--blue);opacity:.72}.territory.enemy{fill:var(--red);opacity:.72}.territory.yellow{fill:var(--yellow);opacity:.70}
+.territory.selected{stroke:var(--select);stroke-width:7;filter:brightness(1.18)}.territory.target{stroke:#fff;stroke-width:8;filter:brightness(1.18)}
+.node circle{stroke:#ffffffd9;stroke-width:2.5;vector-effect:non-scaling-stroke}.node.player circle{fill:#2f83dc}.node.enemy circle{fill:#d9445b}.node.yellow circle{fill:#d1a520}.node.neutral circle{fill:#59616d}
+.node text{fill:#fff;font-size:18px;font-weight:900;text-anchor:middle;dominant-baseline:middle;pointer-events:none}.node{pointer-events:none}
+.unit{pointer-events:none}.unit circle{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}.unit text{fill:#fff;font-size:11px;font-weight:900;text-anchor:middle;dominant-baseline:middle}
+#trace{display:none;fill:none;stroke:#fff3a6;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;opacity:.9;pointer-events:none;vector-effect:non-scaling-stroke}
+#toast{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);background:#000d;color:#fff;padding:8px 12px;border-radius:999px;font-size:12px;opacity:0;transition:opacity .15s;white-space:nowrap;pointer-events:none}#toast.show{opacity:1}
+#overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:#07090cbb;z-index:5}#card{min-width:220px;background:var(--panel);padding:22px;border-radius:18px;text-align:center}
+footer{padding:6px 8px;text-align:center;background:var(--panel);color:var(--muted);font-size:11px}
 </style>
 </head>
 <body>
 <div id="app">
-<header><div><strong>Territory Game <span class="sub">v0.2.4</span></strong><div class="sub">같은 거점에 떼면 선택 · 다른 거점에 떼면 무조건 출병</div></div><button id="restart">재시작</button></header>
-<div id="game"><svg id="map" viewBox="0 0 1000 700"></svg><div id="toast"></div><div id="overlay"><div id="card"><h2 id="resultTitle"></h2><p id="resultText"></p><button id="again">한 판 더</button></div></div></div>
-<footer>새로 점령한 거점에서도 즉시 다음 거점으로 드래그 가능</footer>
+  <header>
+    <div><div class="title">Territory Game <span class="sub">v0.3</span></div><div class="sub">영역을 훑어서 선택 → 목표 영역에서 손 떼기</div></div>
+    <div class="hud" id="hud"></div>
+    <button id="restart">재시작</button>
+  </header>
+  <div id="game">
+    <svg id="map" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="toast"></div>
+    <div id="overlay"><div id="card"><h2 id="resultTitle"></h2><p id="resultText"></p><button id="again">한 판 더</button></div></div>
+  </div>
+  <footer>21개 Territory · 3팀 · 큰 땅일수록 생산력 최대 1.4 · 동그라미는 병력 표시만</footer>
 </div>
 <script>
 (()=>{
-const svg=document.querySelector('#map'),toast=document.querySelector('#toast'),overlay=document.querySelector('#overlay');
-const COLORS={player:'#4ea1ff',enemy:'#ff5d73'},HIT=82;
-let nodes=[],edges=[],units=[],selected=new Set(),running=true,last=performance.now(),ai=0,grow=0,gesture=null;
+const NS='http://www.w3.org/2000/svg';
+const svg=document.querySelector('#map'),toast=document.querySelector('#toast'),overlay=document.querySelector('#overlay'),hud=document.querySelector('#hud');
+const COLORS={player:'#4ea1ff',enemy:'#ff5d73',yellow:'#f4c84a',neutral:'#697382'};
+const TEAM_NAMES={player:'파랑',enemy:'빨강',yellow:'노랑'};
+const COLS=7,ROWS=3,SEND_RATIO=.5;
+let territories=[],units=[],gesture=null,running=true,last=performance.now(),grow=0,aiRed=0,aiYellow=0;
+
+// 공유 꼭짓점을 써서 빈틈 없이 맞물리는 7×3 불규칙 Territory를 만든다.
+const VX=[0,132,282,423,575,716,866,1000];
+const VY=[
+  [0,0,0,0,0,0,0,0],
+  [214,236,202,227,207,240,215,224],
+  [458,438,472,446,482,449,470,456],
+  [700,700,700,700,700,700,700,700]
+];
+const idx=(r,c)=>r*COLS+c;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+
+function polygonFor(r,c){return [
+  {x:VX[c],y:VY[r][c]},
+  {x:VX[c+1],y:VY[r][c+1]},
+  {x:VX[c+1],y:VY[r+1][c+1]},
+  {x:VX[c],y:VY[r+1][c]}
+]}
+function area(poly){let a=0;for(let i=0,j=poly.length-1;i<poly.length;j=i++)a+=(poly[j].x*poly[i].y-poly[i].x*poly[j].y);return Math.abs(a/2)}
+function centroid(poly){let x=0,y=0;for(const p of poly){x+=p.x;y+=p.y}return{x:x/poly.length,y:y/poly.length}}
+function pointInPoly(p,poly){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];const hit=((a.y>p.y)!==(b.y>p.y))&&(p.x<(b.x-a.x)*(p.y-a.y)/(b.y-a.y||1e-9)+a.x);if(hit)inside=!inside}return inside}
+function neighbors(id){const r=Math.floor(id/COLS),c=id%COLS,out=[];if(c>0)out.push(idx(r,c-1));if(c<COLS-1)out.push(idx(r,c+1));if(r>0)out.push(idx(r-1,c));if(r<ROWS-1)out.push(idx(r+1,c));return out}
+
 function reset(){
- nodes=[{id:0,x:120,y:360,owner:'player',troops:28,rate:1},{id:1,x:300,y:170,owner:'neutral',troops:12,rate:.7},{id:2,x:300,y:540,owner:'neutral',troops:10,rate:.7},{id:3,x:500,y:350,owner:'neutral',troops:18,rate:.9},{id:4,x:690,y:160,owner:'neutral',troops:14,rate:.8},{id:5,x:700,y:540,owner:'neutral',troops:12,rate:.8},{id:6,x:880,y:350,owner:'enemy',troops:28,rate:1}];
- edges=[[0,1],[0,2],[1,3],[2,3],[1,4],[2,5],[3,4],[3,5],[4,6],[5,6],[3,6]];
- units=[];selected.clear();gesture=null;running=true;ai=grow=0;last=performance.now();overlay.style.display='none';render();
+  territories=[];units=[];gesture=null;running=true;grow=aiRed=aiYellow=0;last=performance.now();overlay.style.display='none';
+  let areas=[];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)areas.push(area(polygonFor(r,c)));
+  const minA=Math.min(...areas),maxA=Math.max(...areas);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const id=idx(r,c),poly=polygonFor(r,c),a=area(poly),center=centroid(poly);
+    // Territory 크기 기반 생산력 0.9~1.4. 차이는 느껴지되 스노우볼은 제한.
+    const rate=Math.round((.9+(a-minA)/(maxA-minA)*.5)*20)/20;
+    territories.push({id,r,c,poly,center,area:a,rate,owner:'neutral',troops:9+((id*7)%8)});
+  }
+  // 3팀: 파랑 좌하단, 빨강 우하단, 노랑 상단 중앙. 각 2영역 시작.
+  setStart([idx(1,0),idx(2,0)],'player',25);
+  setStart([idx(1,6),idx(2,6)],'enemy',25);
+  setStart([idx(0,3),idx(0,4)],'yellow',25);
+  renderBase();updateAll();
 }
-function render(){
- svg.innerHTML='';
- edges.forEach(([a,b],i)=>{const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',nodes[a].x);l.setAttribute('y1',nodes[a].y);l.setAttribute('x2',nodes[b].x);l.setAttribute('y2',nodes[b].y);l.setAttribute('class','edge');l.dataset.i=i;svg.append(l)});
- nodes.forEach(n=>{const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.dataset.id=n.id;const h=document.createElementNS('http://www.w3.org/2000/svg','circle'),c=document.createElementNS('http://www.w3.org/2000/svg','circle'),t=document.createElementNS('http://www.w3.org/2000/svg','text');h.setAttribute('class','hit');h.setAttribute('cx',n.x);h.setAttribute('cy',n.y);h.setAttribute('r',HIT);c.setAttribute('class','core');c.setAttribute('cx',n.x);c.setAttribute('cy',n.y);c.setAttribute('r',42);t.setAttribute('x',n.x);t.setAttribute('y',n.y);g.append(h,c,t);svg.append(g)});
- const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.id='dragLine';svg.append(l);updateNodes();
+function setStart(ids,owner,t){ids.forEach((id,i)=>{territories[id].owner=owner;territories[id].troops=t-i*3})}
+
+function renderBase(){
+  svg.innerHTML='';
+  const gTerr=document.createElementNS(NS,'g');gTerr.id='territories';svg.append(gTerr);
+  for(const t of territories){const p=document.createElementNS(NS,'polygon');p.dataset.id=t.id;p.setAttribute('points',t.poly.map(v=>`${v.x},${v.y}`).join(' '));gTerr.append(p)}
+  const trace=document.createElementNS(NS,'polyline');trace.id='trace';svg.append(trace);
+  const gNodes=document.createElementNS(NS,'g');gNodes.id='nodes';svg.append(gNodes);
+  for(const t of territories){const g=document.createElementNS(NS,'g'),c=document.createElementNS(NS,'circle'),tx=document.createElementNS(NS,'text');g.dataset.id=t.id;c.setAttribute('cx',t.center.x);c.setAttribute('cy',t.center.y);c.setAttribute('r',31);tx.setAttribute('x',t.center.x);tx.setAttribute('y',t.center.y);g.append(c,tx);gNodes.append(g)}
+  const gUnits=document.createElementNS(NS,'g');gUnits.id='units';svg.append(gUnits);
 }
-function updateNodes(){nodes.forEach(n=>{const g=svg.querySelector(`[data-id="${n.id}"]`);if(!g)return;const target=gesture&&gesture.target===n.id;g.setAttribute('class',`node ${n.owner}${selected.has(n.id)?' selected':''}${target?' target':''}`);g.querySelector('text').textContent=Math.floor(n.troops)})}
-function point(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
-function at(p){let best=null,bestD=HIT;for(const n of nodes){const d=dist(p,n);if(d<bestD){best=n;bestD=d}}return best}
-function connected(a,b){return edges.some(([x,y])=>(x===a&&y===b)||(x===b&&y===a))}
-function send(a,b,owner='player'){const f=nodes[a],t=nodes[b],amount=Math.floor(f.troops/2);if(amount<1)return false;f.troops-=amount;units.push({owner,amount,from:a,to:b,p:0,speed:(owner==='player'?210:190)/dist(f,t)});updateNodes();return true}
-function tap(n){if(n.owner!=='player')return;selected.has(n.id)?selected.delete(n.id):selected.add(n.id);msg(selected.size?`${selected.size}개 거점 선택`:'선택 해제');updateNodes()}
-function sources(start,target){if(selected.has(start)){const s=[...selected].filter(id=>nodes[id].owner==='player'&&connected(id,target));if(s.length)return s}return connected(start,target)?[start]:[]}
-function down(e){const n=at(point(e));if(!n||n.owner!=='player')return;e.preventDefault();gesture={id:e.pointerId,start:n.id,target:null};svg.setPointerCapture?.(e.pointerId)}
-function move(e){if(!gesture||gesture.id!==e.pointerId)return;e.preventDefault();const p=point(e),n=at(p);gesture.target=n&&n.id!==gesture.start?n.id:null;const l=document.querySelector('#dragLine'),s=nodes[gesture.start];l.style.display='block';l.setAttribute('x1',s.x);l.setAttribute('y1',s.y);l.setAttribute('x2',p.x);l.setAttribute('y2',p.y);updateNodes();hot()}
+function updateAll(){
+  for(const t of territories){
+    const p=svg.querySelector(`#territories [data-id="${t.id}"]`);if(p){const sel=gesture?.selected?.has(t.id),target=gesture?.target===t.id;p.setAttribute('class',`territory ${t.owner}${sel?' selected':''}${target?' target':''}`)}
+    const g=svg.querySelector(`#nodes [data-id="${t.id}"]`);if(g){g.setAttribute('class',`node ${t.owner}`);g.querySelector('text').textContent=Math.floor(t.troops)}
+  }
+  const counts={player:0,enemy:0,yellow:0};for(const t of territories)if(counts[t.owner]!==undefined)counts[t.owner]++;
+  hud.textContent=`🔵${counts.player}  🔴${counts.enemy}  🟡${counts.yellow}`;
+}
+function svgPoint(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse())}
+function territoryAt(p){for(const t of territories)if(pointInPoly(p,t.poly))return t;return null}
+
+// 출발 Territory에서 목표까지: 같은 팀 Territory는 자동 경유, 마지막 한 칸만 목표 Territory 허용.
+function route(start,target,owner){
+  if(start===target)return [start];
+  const q=[start],prev=new Map([[start,null]]);
+  while(q.length){const cur=q.shift();for(const n of neighbors(cur)){
+    if(prev.has(n))continue;
+    if(n!==target&&territories[n].owner!==owner)continue;
+    if(n===target||territories[n].owner===owner){prev.set(n,cur);if(n===target){const path=[];let x=n;while(x!==null){path.push(x);x=prev.get(x)}return path.reverse()}q.push(n)}
+  }}return null
+}
+function sendFrom(id,target,owner){
+  const from=territories[id],path=route(id,target,owner);if(!path||path.length<2)return false;
+  const amount=Math.floor(from.troops*SEND_RATIO);if(amount<1)return false;
+  from.troops-=amount;units.push({owner,amount,path,seg:0,prog:0,speed:225});return true
+}
+
+function down(e){
+  if(!running)return;const t=territoryAt(svgPoint(e));if(!t||t.owner!=='player')return;
+  e.preventDefault();gesture={id:e.pointerId,selected:new Set([t.id]),target:null,points:[t.center]};svg.setPointerCapture?.(e.pointerId);updateAll();updateTrace(svgPoint(e));
+}
+function move(e){
+  if(!gesture||gesture.id!==e.pointerId)return;e.preventDefault();const p=svgPoint(e),t=territoryAt(p);
+  if(t?.owner==='player'){gesture.selected.add(t.id);gesture.target=null}
+  else if(t)gesture.target=t.id;
+  else gesture.target=null;
+  gesture.points.push(p);if(gesture.points.length>24)gesture.points.shift();updateTrace(p);updateAll();
+}
 function up(e){
- if(!gesture||gesture.id!==e.pointerId)return;e.preventDefault();
- const g=gesture,target=at(point(e));svg.releasePointerCapture?.(e.pointerId);document.querySelector('#dragLine').style.display='none';gesture=null;
- if(!target||target.id===g.start){tap(nodes[g.start]);hot();return}
- const src=sources(g.start,target.id);let count=0;for(const id of src)if(send(id,target.id))count++;
- msg(count?(count>1?`${count}개 거점 동시 출병`:'출병'):'연결된 이동 경로 없음');updateNodes();hot();
+  if(!gesture||gesture.id!==e.pointerId)return;e.preventDefault();const g=gesture,t=territoryAt(svgPoint(e));svg.releasePointerCapture?.(e.pointerId);
+  const trace=svg.querySelector('#trace');trace.style.display='none';gesture=null;
+  if(!t){msg('목표 Territory에서 손을 떼세요');updateAll();return}
+  if(t.owner==='player'){
+    // 내 땅에서 끝내면 선택 동작만 보여주고 출병하지 않는다.
+    msg(`${g.selected.size}개 Territory 선택`);updateAll();return;
+  }
+  let sent=0;for(const id of g.selected)if(sendFrom(id,t.id,'player'))sent++;
+  msg(sent?`${sent}개 Territory → 목표로 출병`:'아군 영토로 이어지는 경로 없음');updateAll();
 }
-function hot(){svg.querySelectorAll('.edge').forEach(x=>x.setAttribute('class','edge'));if(!gesture||gesture.target===null)return;for(const s of sources(gesture.start,gesture.target)){edges.forEach(([a,b],i)=>{if((a===s&&b===gesture.target)||(b===s&&a===gesture.target))svg.querySelector(`[data-i="${i}"]`)?.setAttribute('class','edge hot')})}}
-function arrive(u){const t=nodes[u.to];if(t.owner===u.owner)t.troops+=u.amount;else if(u.amount>t.troops){t.owner=u.owner;t.troops=u.amount-t.troops;selected.delete(t.id)}else t.troops-=u.amount;updateNodes();check()}
-function aiAct(){const m=nodes.filter(n=>n.owner==='enemy'&&n.troops>=8).sort((a,b)=>b.troops-a.troops)[0];if(!m)return;const ns=edges.filter(([a,b])=>a===m.id||b===m.id).map(([a,b])=>nodes[a===m.id?b:a]).sort((a,b)=>a.troops-b.troops);const t=ns.find(n=>n.owner!=='enemy')||ns[0];if(t)send(m.id,t.id,'enemy')}
-function drawUnits(){svg.querySelectorAll('.unit').forEach(x=>x.remove());units.forEach(u=>{const a=nodes[u.from],b=nodes[u.to],x=a.x+(b.x-a.x)*u.p,y=a.y+(b.y-a.y)*u.p,g=document.createElementNS('http://www.w3.org/2000/svg','g'),c=document.createElementNS('http://www.w3.org/2000/svg','circle'),t=document.createElementNS('http://www.w3.org/2000/svg','text');g.setAttribute('class','unit');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',16);c.setAttribute('fill',COLORS[u.owner]);t.setAttribute('x',x);t.setAttribute('y',y);t.textContent=u.amount;g.append(c,t);svg.append(g)})}
-function check(){const p=nodes.some(n=>n.owner==='player')||units.some(u=>u.owner==='player'),e=nodes.some(n=>n.owner==='enemy')||units.some(u=>u.owner==='enemy');if(!p||!e){running=false;document.querySelector('#resultTitle').textContent=e?'패배':'승리!';document.querySelector('#resultText').textContent=e?'내 거점을 전부 빼앗겼다.':'빨간 거점을 전부 점령했다.';overlay.style.display='flex'}}
-function msg(s){toast.textContent=s;toast.classList.add('show');clearTimeout(msg.t);msg.t=setTimeout(()=>toast.classList.remove('show'),1000)}
-function tick(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(running){grow+=dt;ai+=dt;if(grow>=1){grow-=1;nodes.forEach(n=>{if(n.owner!=='neutral')n.troops+=n.rate});updateNodes()}if(ai>=2.2){ai=0;aiAct()}const done=[];units.forEach((u,i)=>{u.p+=u.speed*dt;if(u.p>=1)done.push(i)});for(let i=done.length-1;i>=0;i--){const j=done[i],u=units[j];units.splice(j,1);arrive(u)}drawUnits()}requestAnimationFrame(tick)}
-svg.addEventListener('pointerdown',down);svg.addEventListener('pointermove',move);svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',()=>{gesture=null;const l=document.querySelector('#dragLine');if(l)l.style.display='none';updateNodes();hot()});document.querySelector('#restart').onclick=reset;document.querySelector('#again').onclick=reset;reset();requestAnimationFrame(tick);
+function cancel(){gesture=null;const trace=svg.querySelector('#trace');if(trace)trace.style.display='none';updateAll()}
+function updateTrace(p){if(!gesture)return;const tr=svg.querySelector('#trace');const start=territories[[...gesture.selected][0]].center;tr.style.display='block';tr.setAttribute('points',`${start.x},${start.y} ${p.x},${p.y}`)}
+
+function aiAct(owner){
+  const mine=territories.filter(t=>t.owner===owner&&t.troops>=7);if(!mine.length)return;
+  const candidates=[];
+  for(const s of mine)for(const n of neighbors(s.id)){const t=territories[n];if(t.owner!==owner)candidates.push({s,t,score:t.troops+(t.owner==='neutral'?0:-3)-s.troops*.25})}
+  if(!candidates.length)return;candidates.sort((a,b)=>a.score-b.score);
+  const pick=candidates[Math.floor(Math.random()*Math.min(3,candidates.length))];sendFrom(pick.s.id,pick.t.id,owner);
+}
+
+function unitPos(u){const a=territories[u.path[u.seg]].center,b=territories[u.path[u.seg+1]].center;return{x:a.x+(b.x-a.x)*u.prog,y:a.y+(b.y-a.y)*u.prog}}
+function stepUnit(u,dt){
+  let remaining=u.speed*dt;
+  while(remaining>0&&u.seg<u.path.length-1){const a=territories[u.path[u.seg]].center,b=territories[u.path[u.seg+1]].center,len=dist(a,b),left=(1-u.prog)*len;if(remaining<left){u.prog+=remaining/len;remaining=0}else{remaining-=left;u.seg++;u.prog=0}}
+  return u.seg>=u.path.length-1
+}
+function arrive(u){
+  const t=territories[u.path[u.path.length-1]];
+  if(t.owner===u.owner)t.troops+=u.amount;
+  else if(u.amount>t.troops){t.owner=u.owner;t.troops=u.amount-t.troops}
+  else t.troops-=u.amount;
+  updateAll();checkEnd();
+}
+function drawUnits(){
+  const layer=svg.querySelector('#units');layer.innerHTML='';
+  for(const u of units){const p=unitPos(u),g=document.createElementNS(NS,'g'),c=document.createElementNS(NS,'circle'),tx=document.createElementNS(NS,'text');g.setAttribute('class','unit');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',14);c.setAttribute('fill',COLORS[u.owner]);tx.setAttribute('x',p.x);tx.setAttribute('y',p.y);tx.textContent=u.amount;g.append(c,tx);layer.append(g)}
+}
+function checkEnd(){
+  const alive=o=>territories.some(t=>t.owner===o)||units.some(u=>u.owner===o);
+  if(!alive('player'))return finish(false);
+  if(!alive('enemy')&&!alive('yellow'))return finish(true);
+}
+function finish(win){running=false;document.querySelector('#resultTitle').textContent=win?'승리!':'패배';document.querySelector('#resultText').textContent=win?'모든 Territory를 장악했다.':'파란 Territory가 모두 사라졌다.';overlay.style.display='flex'}
+function msg(s){toast.textContent=s;toast.classList.add('show');clearTimeout(msg.t);msg.t=setTimeout(()=>toast.classList.remove('show'),1100)}
+
+function tick(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(running){
+    grow+=dt;aiRed+=dt;aiYellow+=dt;
+    if(grow>=1){grow-=1;for(const t of territories)if(t.owner!=='neutral')t.troops+=t.rate;updateAll()}
+    if(aiRed>=2.0+Math.random()*.35){aiRed=0;aiAct('enemy')}
+    if(aiYellow>=2.15+Math.random()*.35){aiYellow=0;aiAct('yellow')}
+    const done=[];for(let i=0;i<units.length;i++)if(stepUnit(units[i],dt))done.push(i);
+    for(let i=done.length-1;i>=0;i--){const j=done[i],u=units[j];units.splice(j,1);arrive(u)}
+    drawUnits();
+  }
+  requestAnimationFrame(tick)
+}
+
+svg.addEventListener('pointerdown',down);svg.addEventListener('pointermove',move);svg.addEventListener('pointerup',up);svg.addEventListener('pointercancel',cancel);
+document.querySelector('#restart').onclick=reset;document.querySelector('#again').onclick=reset;
+reset();requestAnimationFrame(tick);
 })();
 </script>
 </body>
